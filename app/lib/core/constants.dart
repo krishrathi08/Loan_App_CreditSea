@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppConst {
   // Use 10.0.2.2 for Android emulator + local backend, or your deployed Render URL
-  static const String baseUrl = 'https://YOUR-BACKEND.onrender.com/api';
+  static const String baseUrl = 'https://loan-app-creditsea.onrender.com/api';
   static const Color primary = Color(0xFF0878F9);
   static const Color navy = Color(0xFF124F91);
   static const Color teal = Color(0xFF24C8B2);
