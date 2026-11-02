@@ -1,0 +1,50 @@
+# CreditSea Loan App (Flutter + Node.js + MongoDB)
+
+Loan application app: mobile OTP login, profile, loan calculator, eligibility check, application submission and live status tracking.
+
+## Structure
+```
+backend/   Node.js + Express + MongoDB (Mongoose) REST API
+app/       Flutter app (GetX state management)
+```
+
+## Features
+- Mobile number + OTP auth (JWT, persistent login until manual logout)
+- Profile: name, DOB, gender, PAN, email, employment, income
+- Loan calculator (amount 5k–5L, tenure 3–36 months, EMI breakdown)
+- Eligibility rules (age 21–60, income ≥ ₹15,000, credit score ≥ 600, EMI ≤ 50% income, amount ≤ 10× income)
+- Status tracking: Submitted → Under Review → Approved/Rejected → Disbursed (auto-simulated by time, polled every 10s; admin override endpoint)
+
+## API
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | /api/auth/send-otp | Send OTP (demo: returned as `devOtp`) |
+| POST | /api/auth/verify-otp | Verify OTP, returns JWT |
+| GET/PUT | /api/user/profile | Get / save profile |
+| POST | /api/loans/eligibility | Check eligibility |
+| POST | /api/loans/apply | Submit application |
+| GET | /api/loans, /api/loans/:id | List / detail with status |
+| PATCH | /api/loans/:id/status | Admin status change (`x-admin-key`) |
+
+## Run backend
+```
+cd backend && cp .env.example .env   # add MONGO_URI (MongoDB Atlas) and JWT_SECRET
+npm install && npm start
+```
+Deploy on Render: New Web Service → root dir `backend` → build `npm install` → start `npm start` → add env vars.
+
+## Run app
+```
+cd app
+flutter create .          # generates android/ios folders (keeps lib/ and pubspec)
+flutter pub get
+# set baseUrl in lib/core/constants.dart
+flutter run
+flutter build apk --release
+```
+Add to `android/app/src/main/AndroidManifest.xml` (above `<application>`):
+`<uses-permission android:name="android.permission.INTERNET"/>`
+
+## Notes
+- OTP is mocked (no SMS gateway); the demo OTP is shown on the OTP screen. Set `EXPOSE_OTP=false` and plug in an SMS provider for production.
+- The mobile UI uses the [Figma assignment design](https://www.figma.com/design/BtqR1DM3MUBsk4b36s5Ob5/Flutter-Asssignment?node-id=0-1&p=f) as its visual reference. The existing phone-OTP and loan API flow is retained; password sign-in, email verification, and separate PAN verification are not implemented.
