@@ -46,5 +46,5 @@ Add to `android/app/src/main/AndroidManifest.xml` (above `<application>`):
 `<uses-permission android:name="android.permission.INTERNET"/>`
 
 ## Notes
-- OTP is mocked (no SMS gateway); the demo OTP is shown on the OTP screen. Set `EXPOSE_OTP=false` and plug in an SMS provider for production.
+- OTP uses mock mode locally by default; the demo OTP is shown on the OTP screen while `EXPOSE_OTP=true`. For real SMS, create and approve an MSG91 OTP template, set `OTP_PROVIDER=msg91`, and configure `MSG91_AUTH_KEY`, `MSG91_TEMPLATE_ID`, and `MSG91_COUNTRY_CODE` in the backend environment. Set `EXPOSE_OTP=false` when using real SMS. Keep provider credentials private and never commit `.env`.
 - The mobile UI uses the [Figma assignment design](https://www.figma.com/design/BtqR1DM3MUBsk4b36s5Ob5/Flutter-Asssignment?node-id=0-1&p=f) as its visual reference. The existing phone-OTP and loan API flow is retained; password sign-in, email verification, and separate PAN verification are not implemented.
