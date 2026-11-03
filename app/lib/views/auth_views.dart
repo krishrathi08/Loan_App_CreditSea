@@ -53,12 +53,7 @@ class _LoginViewState extends State<LoginView> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              const _AuthHero(
-                title: 'Flexible Loan Options',
-                subtitle: 'Loans to cater to your financial needs',
-                icon: Icons.account_balance_wallet_outlined,
-                showLoanTypes: true,
-              ),
+              const _AuthHero(),
               Transform.translate(
                 offset: const Offset(0, -18),
                 child: Container(
@@ -117,7 +112,7 @@ class _LoginViewState extends State<LoginView> {
                         ],
                       ),
                       const SizedBox(height: 14),
-                      Row(
+                      const Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Icon(
@@ -125,8 +120,8 @@ class _LoginViewState extends State<LoginView> {
                             color: AppConst.primary,
                             size: 19,
                           ),
-                          const SizedBox(width: 8),
-                          const Expanded(
+                          SizedBox(width: 8),
+                          Expanded(
                             child: Text(
                               'By continuing, you agree to our privacy policy and Terms & Conditions.',
                               style: TextStyle(
@@ -216,11 +211,7 @@ class _OtpViewState extends State<OtpView> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              const _AuthHero(
-                title: 'Instant Loan Approval',
-                subtitle: 'Verify your number to continue',
-                icon: Icons.fact_check_outlined,
-              ),
+              const _AuthHero(),
               Transform.translate(
                 offset: const Offset(0, -18),
                 child: Container(
@@ -358,18 +349,43 @@ class _OtpViewState extends State<OtpView> {
   }
 }
 
-class _AuthHero extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final bool showLoanTypes;
+class _AuthHero extends StatefulWidget {
+  const _AuthHero();
 
-  const _AuthHero({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    this.showLoanTypes = false,
-  });
+  @override
+  State<_AuthHero> createState() => _AuthHeroState();
+}
+
+class _AuthHeroState extends State<_AuthHero> {
+  static const _slides = [
+    (
+      title: 'Flexible Loan Options',
+      subtitle: 'Loans to cater to your financial needs',
+      icon: Icons.account_balance_wallet_outlined,
+      showLoanTypes: true,
+    ),
+    (
+      title: 'Instant Loan Approval',
+      subtitle: 'Users will receive approval within minutes',
+      icon: Icons.fact_check_outlined,
+      showLoanTypes: false,
+    ),
+    (
+      title: '24x7 Customer Care',
+      subtitle: 'Dedicated customer support team',
+      icon: Icons.support_agent_outlined,
+      showLoanTypes: false,
+    ),
+  ];
+
+  final _pageController = PageController();
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -387,55 +403,92 @@ class _AuthHero extends StatelessWidget {
       child: Column(
         children: [
           const CreditSeaLogo(onBlue: true, size: 24),
-          const Spacer(),
-          if (showLoanTypes)
-            Wrap(
-              spacing: 12,
-              runSpacing: 10,
-              children: const [
-                _LoanTypeIcon(Icons.directions_car_outlined),
-                _LoanTypeIcon(Icons.two_wheeler_outlined),
-                _LoanTypeIcon(Icons.laptop_outlined),
-                _LoanTypeIcon(Icons.phone_android_outlined),
-              ],
-            )
-          else
-            Container(
-              width: 92,
-              height: 92,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .12),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Icon(icon, size: 48, color: Colors.white),
-            ),
-          const SizedBox(height: 15),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
+          const SizedBox(height: 10),
+          Expanded(
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: _slides.length,
+              onPageChanged: (page) => setState(() => _currentPage = page),
+              itemBuilder: (context, index) =>
+                  _HeroSlide(slide: _slides[index]),
             ),
           ),
-          const SizedBox(height: 5),
-          Text(
-            subtitle,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-          const SizedBox(height: 14),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _PageDot(),
-              SizedBox(width: 5),
-              _PageDot(),
-              SizedBox(width: 5),
-              _PageDot(active: true),
-            ],
+            children: List.generate(
+              _slides.length,
+              (index) => GestureDetector(
+                onTap: () => _pageController.animateToPage(
+                  index,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                ),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 3, vertical: 6),
+                  child: _PageDot(active: index == _currentPage),
+                ),
+              ),
+            ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _HeroSlide extends StatelessWidget {
+  final ({
+    String title,
+    String subtitle,
+    IconData icon,
+    bool showLoanTypes,
+  }) slide;
+
+  const _HeroSlide({required this.slide});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        if (slide.showLoanTypes)
+          const Wrap(
+            spacing: 12,
+            runSpacing: 10,
+            children: [
+              _LoanTypeIcon(Icons.directions_car_outlined),
+              _LoanTypeIcon(Icons.two_wheeler_outlined),
+              _LoanTypeIcon(Icons.laptop_outlined),
+              _LoanTypeIcon(Icons.phone_android_outlined),
+            ],
+          )
+        else
+          Container(
+            width: 92,
+            height: 92,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: .12),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(slide.icon, size: 48, color: Colors.white),
+          ),
+        const SizedBox(height: 15),
+        Text(
+          slide.title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          slide.subtitle,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white70, fontSize: 12),
+        ),
+      ],
     );
   }
 }
@@ -461,7 +514,8 @@ class _PageDot extends StatelessWidget {
   const _PageDot({this.active = false});
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) => AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         width: active ? 16 : 6,
         height: 6,
         decoration: BoxDecoration(
