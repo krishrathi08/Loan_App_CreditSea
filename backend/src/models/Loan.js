@@ -13,6 +13,14 @@ const loanSchema = new mongoose.Schema({
   rejectionReason: String,
   history: [{ status: String, at: { type: Date, default: Date.now } }],
   manual: { type: Boolean, default: false },
+  amountPaid: { type: Number, default: 0 },
+  repayments: [{
+    receiptId: { type: String, required: true },
+    amount: { type: Number, required: true },
+    paymentMode: { type: String, enum: ['MOCK'], default: 'MOCK' },
+    paidAt: { type: Date, default: Date.now },
+    balanceAfter: { type: Number, required: true },
+  }],
 }, { timestamps: true });
 module.exports = mongoose.model('Loan', loanSchema);
 module.exports.STATUSES = STATUSES;

@@ -47,4 +47,6 @@ class ApiService {
       _run(() => http.post(_u(p), headers: _headers, body: jsonEncode(body)));
   Future<Map<String, dynamic>> put(String p, Map body) =>
       _run(() => http.put(_u(p), headers: _headers, body: jsonEncode(body)));
+  Future<Map<String, dynamic>> delete(String p, Map body) =>
+      _run(() => http.delete(_u(p), headers: _headers, body: jsonEncode(body)));
 }

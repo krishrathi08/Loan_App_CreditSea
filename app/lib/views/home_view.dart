@@ -99,7 +99,7 @@ class HomeTab extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Your credit score',
+                    'Simulated credit score',
                     style: TextStyle(color: Colors.white70),
                   ),
                   Text(
@@ -112,8 +112,13 @@ class HomeTab extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Instant loans up to ₹5,00,000',
+                    'Demo estimate only; not a bureau score.',
                     style: TextStyle(color: Colors.white),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Successful demo repayments add 5 points (max 900).',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                   const SizedBox(height: 16),
                   FilledButton(
@@ -155,8 +160,9 @@ class LoansTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = Get.find<LoanController>();
     return Obx(() {
-      if (c.loading.value && c.loans.isEmpty)
+      if (c.loading.value && c.loans.isEmpty) {
         return const Center(child: CircularProgressIndicator());
+      }
       return RefreshIndicator(
         onRefresh: c.fetchLoans,
         child: c.loans.isEmpty
@@ -249,6 +255,8 @@ class LoanDetailView extends StatelessWidget {
         final loan = c.loans.firstWhereOrNull((l) => l.id == loanId);
         if (loan == null) return const Center(child: Text('Not found'));
         final rejected = loan.status == 'Rejected';
+        final remainingBalance =
+            (loan.totalPayable - loan.amountPaid).clamp(0, double.infinity);
         final steps = [
           'Submitted',
           'Under Review',
@@ -287,6 +295,84 @@ class LoanDetailView extends StatelessWidget {
                 ),
               ),
             ),
+            if (loan.status == 'Disbursed') ...[
+              const SizedBox(height: 12),
+              Card(
+                color: const Color(0xFFF2F7FF),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Demo EMI repayment',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Simulation only. No payment provider is connected and no money will be charged.',
+                      ),
+                      const SizedBox(height: 10),
+                      _kv('Paid in demo', inr(loan.amountPaid)),
+                      _kv('Demo balance', inr(remainingBalance)),
+                      if (remainingBalance > 0)
+                        FilledButton.icon(
+                          onPressed: c.loading.value
+                              ? null
+                              : () => Get.dialog(
+                                    AlertDialog(
+                                      title:
+                                          const Text('Record demo repayment?'),
+                                      content: Text(
+                                        '${inr(loan.emi)} will be added to the demo repayment history. No money will be charged.',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: Get.back,
+                                          child: const Text('Cancel'),
+                                        ),
+                                        FilledButton(
+                                          onPressed: () {
+                                            Get.back();
+                                            c.repay(loan.id);
+                                          },
+                                          child: const Text(
+                                              'Confirm demo payment'),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                          icon: const Icon(Icons.payments_outlined),
+                          label: const Text('Record demo EMI'),
+                        )
+                      else
+                        const Text(
+                          'Demo balance fully repaid',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      if (loan.repayments.isNotEmpty) ...[
+                        const Divider(),
+                        const Text(
+                          'Demo repayment history',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        for (final payment in loan.repayments.reversed)
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            dense: true,
+                            title: Text(inr(payment.amount)),
+                            subtitle: Text(
+                              DateFormat('dd MMM yyyy, hh:mm a')
+                                  .format(payment.paidAt),
+                            ),
+                            trailing: const Text('MOCK'),
+                          ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
             const Text(
               'Application progress',

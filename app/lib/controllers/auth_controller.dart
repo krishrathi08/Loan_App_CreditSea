@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import '../core/api_service.dart';
 import '../models/user_model.dart';
+import '../services/push_notification_service.dart';
 
 class AuthController extends GetxController {
   final _api = ApiService();
@@ -47,9 +49,7 @@ class AuthController extends GetxController {
         Get.offNamed('/create-password');
         return;
       }
-      await _box.write('token', res['token']);
-      user.value = UserModel.fromJson(res['user']);
-      Get.offAllNamed(user.value!.profileComplete ? '/home' : '/profile-setup');
+      await _startSession(res);
     } catch (e) {
       _err(e);
     } finally {
@@ -89,6 +89,7 @@ class AuthController extends GetxController {
   Future<void> _startSession(Map<String, dynamic> res) async {
     await _box.write('token', res['token']);
     user.value = UserModel.fromJson(res['user']);
+    unawaited(PushNotificationService.instance.initialize());
     Get.offAllNamed(user.value!.profileComplete ? '/home' : '/profile-setup');
   }
 
@@ -98,6 +99,7 @@ class AuthController extends GetxController {
     try {
       final res = await _api.get('/user/profile');
       user.value = UserModel.fromJson(res['user']);
+      unawaited(PushNotificationService.instance.initialize());
       Get.offAllNamed(user.value!.profileComplete ? '/home' : '/profile-setup');
     } catch (e) {
       if (!isLoggedIn) {
@@ -130,6 +132,7 @@ class AuthController extends GetxController {
   }
 
   Future<void> logout() async {
+    await PushNotificationService.instance.unregister();
     await _box.remove('token');
     user.value = null;
     Get.offAllNamed('/login');

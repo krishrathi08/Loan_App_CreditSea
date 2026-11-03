@@ -2,7 +2,12 @@ const router = require('express').Router();
 const auth = require('../middleware/auth');
 const Loan = require('../models/Loan');
 const { STATUSES } = require('../models/Loan');
+const User = require('../models/User');
 const { checkEligibility } = require('../utils/eligibility');
+const mongoose = require('mongoose');
+const { randomUUID } = require('node:crypto');
+const { calculateDemoRepayment, scoreAfterOnTimeDemoRepayment } = require('../utils/repayment');
+const notifications = require('../services/notifications');
 
 const RATE = 12;
 
@@ -20,6 +25,11 @@ async function advance(loan) {
       loan.history.push({ status: st });
     loan.status = next;
     await loan.save();
+    void notifications.sendToUser(loan.user, {
+      title: 'Loan application update',
+      body: `Your application status is now ${next}.`,
+      loanId: String(loan._id),
+    }).catch((error) => console.error('Push notification failed:', error.message));
   }
   return loan;
 }
@@ -62,6 +72,73 @@ router.get('/:id', auth, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+router.post('/:id/repay', auth, async (req, res, next) => {
+  let session;
+  try {
+    session = await mongoose.startSession();
+    let result;
+    await session.withTransaction(async () => {
+      const loan = await Loan.findOne({ _id: req.params.id, user: req.user._id }).session(session);
+      if (!loan) {
+        const error = new Error('Loan not found');
+        error.status = 404;
+        throw error;
+      }
+
+      const repayment = calculateDemoRepayment(loan);
+      const user = await User.findById(req.user._id).session(session);
+      if (!user) {
+        const error = new Error('User not found');
+        error.status = 404;
+        throw error;
+      }
+
+      const previousScore = Number(user.creditScore);
+      const score = scoreAfterOnTimeDemoRepayment(previousScore);
+      const paidAt = new Date();
+      const receiptId = randomUUID();
+      loan.amountPaid = Math.round(((loan.amountPaid || 0) + repayment.amount) * 100) / 100;
+      loan.repayments.push({
+        receiptId,
+        amount: repayment.amount,
+        paymentMode: 'MOCK',
+        paidAt,
+        balanceAfter: repayment.balanceAfter,
+      });
+      user.creditScore = score;
+      user.creditScoreHistory.push({
+        score,
+        change: score - previousScore,
+        reason: 'Successful demo loan repayment',
+        at: paidAt,
+      });
+
+      await loan.save({ session });
+      await user.save({ session });
+      result = {
+        loan,
+        repayment: { receiptId, amount: repayment.amount, balanceAfter: repayment.balanceAfter },
+        creditScore: user.creditScore,
+      };
+    });
+    res.json({
+      ...result,
+      demo: true,
+      message: 'Demo repayment recorded. No real money was charged.',
+    });
+  } catch (e) {
+    if (e.message === 'Repayments are available after the loan is disbursed'
+        || e.message === 'This loan is already fully repaid'
+        || e.message === 'Loan repayment details are invalid') {
+      return res.status(400).json({ message: e.message });
+    }
+    if (e.status) return res.status(e.status).json({ message: e.message });
+    next(e);
+  } finally {
+    if (session) await session.endSession();
+  }
+});
+
 // Admin: manually set status (header x-admin-key)
 router.patch('/:id/status', async (req, res, next) => {
   try {
@@ -72,6 +149,11 @@ router.patch('/:id/status', async (req, res, next) => {
     loan.status = req.body.status; loan.manual = true;
     loan.history.push({ status: req.body.status });
     await loan.save();
+    void notifications.sendToUser(loan.user, {
+      title: 'Loan application update',
+      body: `Your application status is now ${loan.status}.`,
+      loanId: String(loan._id),
+    }).catch((error) => console.error('Push notification failed:', error.message));
     res.json({ loan });
   } catch (e) { next(e); }
 });

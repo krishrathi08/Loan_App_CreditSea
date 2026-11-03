@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'auth_controller.dart';
 import '../core/api_service.dart';
+import '../core/constants.dart';
 import '../models/loan_model.dart';
 
 class LoanController extends GetxController {
@@ -20,7 +22,7 @@ class LoanController extends GetxController {
   static const rate = 12.0;
 
   double get emi {
-    final r = rate / 12 / 100;
+    const r = rate / 12 / 100;
     final n = tenure.value;
     final p = amount.value;
     return p * r * pow(1 + r, n) / (pow(1 + r, n) - 1);
@@ -61,6 +63,31 @@ class LoanController extends GetxController {
           {'amount': amount.value, 'tenureMonths': tenure.value});
       eligible.value = res['eligible'];
       reasons.value = List<String>.from(res['reasons'] ?? []);
+    } catch (e) {
+      Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  Future<void> repay(String loanId) async {
+    loading.value = true;
+    try {
+      final result = await _api.post('/loans/$loanId/repay', {});
+      final updatedLoan = LoanModel.fromJson(result['loan']);
+      final loanIndex = loans.indexWhere((loan) => loan.id == loanId);
+      if (loanIndex >= 0) loans[loanIndex] = updatedLoan;
+      final auth = Get.find<AuthController>();
+      final currentUser = auth.user.value;
+      if (currentUser != null) {
+        auth.user.value = currentUser.withCreditScore(result['creditScore']);
+      }
+      final payment = result['repayment'];
+      Get.snackbar(
+        'Demo repayment recorded',
+        '${inr(payment['amount'])} recorded. No real money was charged.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } catch (e) {
       Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
     } finally {

@@ -33,4 +33,18 @@ class UserModel {
         creditScore: j['creditScore'] ?? 650,
         profileComplete: j['profileComplete'] ?? false,
       );
+
+  UserModel withCreditScore(int score) => UserModel(
+        id: id,
+        phone: phone,
+        name: name,
+        gender: gender,
+        pan: pan,
+        email: email,
+        dob: dob,
+        employmentType: employmentType,
+        monthlyIncome: monthlyIncome,
+        creditScore: score,
+        profileComplete: profileComplete,
+      );
 }
