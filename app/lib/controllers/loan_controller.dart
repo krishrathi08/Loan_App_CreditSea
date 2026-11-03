@@ -36,7 +36,8 @@ class LoanController extends GetxController {
     super.onInit();
     fetchLoans();
     // live status tracking
-    _poll = Timer.periodic(const Duration(seconds: 10), (_) => fetchLoans(silent: true));
+    _poll = Timer.periodic(
+        const Duration(seconds: 10), (_) => fetchLoans(silent: true));
   }
 
   @override
@@ -49,7 +50,8 @@ class LoanController extends GetxController {
     if (!silent) loading.value = true;
     try {
       final res = await _api.get('/loans');
-      loans.value = (res['loans'] as List).map((e) => LoanModel.fromJson(e)).toList();
+      loans.value =
+          (res['loans'] as List).map((e) => LoanModel.fromJson(e)).toList();
     } catch (_) {
     } finally {
       loading.value = false;
@@ -98,17 +100,34 @@ class LoanController extends GetxController {
   Future<void> apply() async {
     loading.value = true;
     try {
-      await _api.post('/loans/apply', {
+      final result = await _api.post('/loans/apply', {
         'amount': amount.value,
         'tenureMonths': tenure.value,
         'purpose': purpose.value,
       });
+      final submittedLoan = LoanModel.fromJson(result['loan']);
+      loans.removeWhere((loan) => loan.id == submittedLoan.id);
+      loans.insert(0, submittedLoan);
       eligible.value = null;
-      await fetchLoans(silent: true);
-      Get.snackbar('Submitted', 'Your loan application has been submitted',
-          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.green.shade50);
-      Get.back(); // close calculator
-      Get.find<NavController>().index.value = 1; // go to Loans tab
+      Get.back();
+      Get.find<NavController>().index.value = 1;
+      await Get.dialog<void>(
+        AlertDialog(
+          icon: const Icon(Icons.check_circle, color: Colors.green, size: 40),
+          title: const Text('Application submitted'),
+          content: Text(
+            'Your application for ${inr(submittedLoan.amount)} was submitted successfully. '
+            'You can track its status in My Loans.\n\n'
+            'Application ID: ${submittedLoan.id}',
+          ),
+          actions: [
+            FilledButton(
+              onPressed: Get.back,
+              child: const Text('View my loans'),
+            ),
+          ],
+        ),
+      );
     } catch (e) {
       Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
     } finally {
