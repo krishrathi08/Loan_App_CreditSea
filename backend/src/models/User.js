@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema({
   employmentType: { type: String, enum: ['Salaried', 'Self-Employed', 'Student', 'Unemployed'], default: 'Salaried' },
   creditScore: { type: Number, default: 650 },
   profileComplete: { type: Boolean, default: false },
+  passwordHash: { type: String, select: false },
   otp: String,
   otpExpiry: Date,
 }, { timestamps: true });
