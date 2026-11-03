@@ -79,6 +79,9 @@ class MyApp extends StatelessWidget {
         GetPage(name: '/', page: () => const SplashView()),
         GetPage(name: '/login', page: () => const LoginView()),
         GetPage(name: '/otp', page: () => const OtpView()),
+        GetPage(name: '/password-login', page: () => const PasswordLoginView()),
+        GetPage(
+            name: '/create-password', page: () => const CreatePasswordView()),
         GetPage(name: '/profile-setup', page: () => const ProfileFormView()),
         GetPage(
           name: '/home',

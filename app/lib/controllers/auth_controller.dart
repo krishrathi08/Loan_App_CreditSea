@@ -12,11 +12,12 @@ class AuthController extends GetxController {
   final user = Rxn<UserModel>();
   final phone = ''.obs;
   final devOtp = ''.obs;
+  final setupToken = ''.obs;
 
   bool get isLoggedIn => _box.read('token') != null;
 
-  void _err(Object e) =>
-      Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.shade50);
+  void _err(Object e) => Get.snackbar('Error', e.toString(),
+      snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.shade50);
 
   Future<void> sendOtp(String p) async {
     loading.value = true;
@@ -35,7 +36,17 @@ class AuthController extends GetxController {
   Future<void> verifyOtp(String otp) async {
     loading.value = true;
     try {
-      final res = await _api.post('/auth/verify-otp', {'phone': phone.value, 'otp': otp});
+      final res = await _api
+          .post('/auth/verify-otp', {'phone': phone.value, 'otp': otp});
+      if (res['needsPasswordSetup'] == true) {
+        setupToken.value = res['setupToken']?.toString() ?? '';
+        if (setupToken.value.isEmpty) {
+          throw ApiException(
+              'Password setup could not be started. Please request a new OTP.');
+        }
+        Get.offNamed('/create-password');
+        return;
+      }
       await _box.write('token', res['token']);
       user.value = UserModel.fromJson(res['user']);
       Get.offAllNamed(user.value!.profileComplete ? '/home' : '/profile-setup');
@@ -44,6 +55,41 @@ class AuthController extends GetxController {
     } finally {
       loading.value = false;
     }
+  }
+
+  Future<void> loginWithPassword(String p, String password) async {
+    loading.value = true;
+    try {
+      final res =
+          await _api.post('/auth/login', {'phone': p, 'password': password});
+      await _startSession(res);
+    } catch (e) {
+      _err(e);
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  Future<void> setPassword(String password) async {
+    loading.value = true;
+    try {
+      final res = await _api.post('/auth/set-password', {
+        'setupToken': setupToken.value,
+        'password': password,
+      });
+      setupToken.value = '';
+      await _startSession(res);
+    } catch (e) {
+      _err(e);
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  Future<void> _startSession(Map<String, dynamic> res) async {
+    await _box.write('token', res['token']);
+    user.value = UserModel.fromJson(res['user']);
+    Get.offAllNamed(user.value!.profileComplete ? '/home' : '/profile-setup');
   }
 
   /// Called from splash: keeps the user logged in until manual logout.

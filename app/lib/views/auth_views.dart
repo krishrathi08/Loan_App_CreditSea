@@ -163,15 +163,7 @@ class _LoginViewState extends State<LoginView> {
                       const SizedBox(height: 10),
                       Center(
                         child: TextButton(
-                          onPressed: () {
-                            if (phone.text.length != 10) {
-                              Get.snackbar(
-                                  'Invalid', 'Enter a 10-digit mobile number',
-                                  snackPosition: SnackPosition.BOTTOM);
-                              return;
-                            }
-                            c.sendOtp(phone.text);
-                          },
+                          onPressed: () => Get.toNamed('/password-login'),
                           child: const Text('Existing User? Sign in'),
                         ),
                       ),
@@ -339,6 +331,269 @@ class _OtpViewState extends State<OtpView> {
                       ),
                     ],
                   ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PasswordLoginView extends StatefulWidget {
+  const PasswordLoginView({super.key});
+
+  @override
+  State<PasswordLoginView> createState() => _PasswordLoginViewState();
+}
+
+class _PasswordLoginViewState extends State<PasswordLoginView> {
+  final phone = TextEditingController();
+  final password = TextEditingController();
+  bool _obscurePassword = true;
+
+  @override
+  void dispose() {
+    phone.dispose();
+    password.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Get.find<AuthController>();
+    return Scaffold(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              const _AuthHero(),
+              Transform.translate(
+                offset: const Offset(0, -18),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(22)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Center(
+                        child: Text(
+                          'Please enter your credentials',
+                          style: TextStyle(
+                              fontSize: 19, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      const _FieldLabel('Mobile Number'),
+                      Row(
+                        children: [
+                          Container(
+                            height: 52,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: AppConst.fieldBorder),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text('🇮🇳  +91',
+                                style: TextStyle(fontWeight: FontWeight.w500)),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              controller: phone,
+                              keyboardType: TextInputType.phone,
+                              maxLength: 10,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly
+                              ],
+                              decoration: const InputDecoration(
+                                  hintText: 'Enter your mobile number',
+                                  counterText: ''),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const _FieldLabel('Enter password'),
+                      TextField(
+                        controller: password,
+                        obscureText: _obscurePassword,
+                        decoration: InputDecoration(
+                          hintText: 'Enter password',
+                          suffixIcon: IconButton(
+                            onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword),
+                            icon: Icon(_obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined),
+                          ),
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () => Get.offAllNamed('/login'),
+                          child: const Text('Sign in with OTP'),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Obx(
+                        () => FilledButton(
+                          onPressed: c.loading.value
+                              ? null
+                              : () {
+                                  if (phone.text.length != 10 ||
+                                      password.text.isEmpty) {
+                                    Get.snackbar('Missing details',
+                                        'Enter your 10-digit mobile number and password',
+                                        snackPosition: SnackPosition.BOTTOM);
+                                    return;
+                                  }
+                                  c.loginWithPassword(
+                                      phone.text, password.text);
+                                },
+                          child: c.loading.value
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2))
+                              : const Text('Sign In'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Center(
+                        child: TextButton(
+                          onPressed: () => Get.offAllNamed('/login'),
+                          child:
+                              const Text('New to CreditSea? Create an account'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class CreatePasswordView extends StatefulWidget {
+  const CreatePasswordView({super.key});
+
+  @override
+  State<CreatePasswordView> createState() => _CreatePasswordViewState();
+}
+
+class _CreatePasswordViewState extends State<CreatePasswordView> {
+  final password = TextEditingController();
+  final confirmPassword = TextEditingController();
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+
+  @override
+  void dispose() {
+    password.dispose();
+    confirmPassword.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Get.find<AuthController>();
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          onPressed: () => Get.offAllNamed('/login'),
+          icon: const Icon(Icons.arrow_back),
+        ),
+        title: const Text('Create a password'),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(22, 12, 22, 22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _FieldLabel('Enter password'),
+              TextField(
+                controller: password,
+                obscureText: _obscurePassword,
+                maxLength: 128,
+                decoration: InputDecoration(
+                  hintText: 'Enter password',
+                  counterText: '',
+                  suffixIcon: IconButton(
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
+                    icon: Icon(_obscurePassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const _FieldLabel('Re-enter password'),
+              TextField(
+                controller: confirmPassword,
+                obscureText: _obscureConfirmPassword,
+                maxLength: 128,
+                decoration: InputDecoration(
+                  hintText: 'Re-enter password',
+                  counterText: '',
+                  suffixIcon: IconButton(
+                    onPressed: () => setState(() =>
+                        _obscureConfirmPassword = !_obscureConfirmPassword),
+                    icon: Icon(_obscureConfirmPassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Use at least 8 characters and include at least one special character.',
+                style: TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+              const SizedBox(height: 24),
+              Obx(
+                () => FilledButton(
+                  onPressed: c.loading.value
+                      ? null
+                      : () {
+                          final value = password.text;
+                          if (value.length < 8 ||
+                              value.length > 128 ||
+                              !RegExp(r'[^A-Za-z0-9]').hasMatch(value)) {
+                            Get.snackbar('Password too weak',
+                                'Use 8–128 characters and at least one special character',
+                                snackPosition: SnackPosition.BOTTOM);
+                            return;
+                          }
+                          if (value != confirmPassword.text) {
+                            Get.snackbar('Passwords do not match',
+                                'Re-enter the same password',
+                                snackPosition: SnackPosition.BOTTOM);
+                            return;
+                          }
+                          c.setPassword(value);
+                        },
+                  child: c.loading.value
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Proceed'),
                 ),
               ),
             ],
